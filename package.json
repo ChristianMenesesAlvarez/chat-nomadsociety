@@ -1,0 +1,26 @@
+{
+  "name": "chat-nomadsociety",
+  "version": "1.0.0",
+  "description": "NomadSociety websockets chat app",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/main/server.js",
+    "dev": "nodemon src/main/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kric12/chat-nomadsociety.git"
+  },
+  "author": "FSPT2022",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/Kric12/chat-nomadsociety/issues"
+  },
+  "homepage": "https://github.com/Kric12/chat-nomadsociety#readme",
+  "dependencies": {
+    "express": "^4.18.2",
+    "nodemon": "^2.0.21"
+  }
+}
