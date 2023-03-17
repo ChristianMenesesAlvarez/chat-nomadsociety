@@ -2,17 +2,16 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 
-const port = 4000;
-const app = express();
-const server = createServer(app);
-const io = new Server(server, {
+const chatPort = 4001;
+const chatApp = express();
+const chatServer = createServer(chatApp);
+const io = new Server(chatServer, {
   cors: {
     origin: [
       'http://localhost:5173',
       'http://127.0.0.1:5173',
       'http://127.0.0.1:5173/'
     ],
-    allowedHeaders: 'authorization',
     credentials: true
   }
 });
@@ -21,26 +20,58 @@ io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   // CHECK TOKEN
   if (token == 'abcd') {
-    next()
+    return next()
   } else {
-    next(new Error('You were unable to connect'));
+    return next(new Error('You were unable to connect'));
   }
 })
 
-io.on('connection', (socket) => {
-  console.log('User connected with token', socket.handshake.auth.token);
-  io.emit('message', 'You are now connected', 'warning');
+const chatrooms = io.of('/chatrooms');
 
-  socket.on('message', (msg, recipient, cb) => {
+chatrooms.on('connection', (socket) => {
+  const token = socket.handshake.auth.token;
+  console.log(`User connected on "/chatrooms" with token "${token}"`);
+
+  socket.on('joinRoom', (room) => {
+    socket.join(room);
+    console.log(`User joined room ${room}`)
+    io.of('/chatrooms').to(room).emit('message', `You have joined room #${room}`, 'warning');
+  });
+
+  socket.on('message', (msg, room, cb) => {
+    io.of('/chatrooms').to(room).emit('message', msg, token);
     cb('OK');
-    io.emit('message', msg, socket.id);
   });
 
   socket.on('disconnect', () => {
-    console.log('User disconnected', socket.id);
+    console.log(`User disconnected with token ${token}`);
   });
 });
 
-server.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
+const personal = io.of('/personal');
+
+personal.on('connection', (socket) => {
+  const token = socket.handshake.auth.token;
+  console.log(`User connected on "/personal" with token "${token}"`);
+
+  socket.on('joinRoom', (userId) => {
+    socket.join(token);
+    socket.join(userId);
+    console.log(`User joined personal chat with ${token}`)
+    console.log(`User joined chat with ${userId}`)
+  });
+
+  socket.on('message', (msg, userId, cb) => {
+    io.of('/personal').to(token).to(userId).emit('message', msg, token);
+    cb('OK');
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`User disconnected with token ${token}`);
+  });
 });
+
+chatServer.listen(chatPort, () => {
+  console.log(`Chat listening on port ${chatPort}`);
+});
+
