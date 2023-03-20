@@ -2,7 +2,7 @@
   "name": "chat-nomadsociety",
   "version": "1.0.0",
   "description": "NomadSociety websockets chat app",
-  "main": "server.js",
+  "main": "src/server.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
