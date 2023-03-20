@@ -5,6 +5,7 @@ import { Server } from 'socket.io';
 import { DBconnection } from './database.js';
 import * as usersRepository from '../src/api/usersRepository.js';
 import * as chatRepository from '../src/api/chatRepository.js';
+import { verifyToken } from './api/verifyToken.js';
 
 dotenv.config();
 DBconnection();
