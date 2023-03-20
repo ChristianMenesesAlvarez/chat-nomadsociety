@@ -23,10 +23,6 @@ const io = new Server(server, {
   }
 });
 
-socket.on('connect', (io) => {
-  io.emit('message', 'You are now connected', 'warning');
-})
-
 const chatrooms = io.of('/chatrooms');
 
 chatrooms.use(async (socket, next) => {
