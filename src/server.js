@@ -19,87 +19,91 @@ const io = new Server(server, {
       'http://127.0.0.1:5173',
       'http://127.0.0.1:5173/'
     ],
-    credentials: true
   }
 });
 
-const chatrooms = io.of('/chatrooms');
+io.on('connection', (socket) => {
+  console.log('A user connected ', socket.id)
+})
 
-chatrooms.use(async (socket, next) => {
-  const token = socket.handshake.auth.token;
-  if (!token) return next(new Error('Unauthorized'));
-  try {
-    const { id } = verifyToken(token);
-    const getUser = await usersRepository.getUser({ _id: id });
-    if (!getUser) return next(new Error('Unauthorized'));
-    return next();
-  } catch (error) {
-    return next(new Error(error.message));
-  }
-});
 
-chatrooms.on('connection', (socket) => {
-  const token = socket.handshake.auth.token;
-  const { id } = verifyToken(token);
-  console.log(`User connected on "/chatrooms" with id "${id}"`);
+// const chatrooms = io.of('/chatrooms');
 
-  socket.on('joinRoom', (room) => {
-    socket.join(room);
-    console.log(`User "${id}" joined room ${room}`)
-    io.of('/chatrooms').to(room).emit('message', `You have joined room #${room}`, 'warning');
-  });
+// chatrooms.use(async (socket, next) => {
+//   const token = socket.handshake.auth.token;
+//   if (!token) return next(new Error('Unauthorized'));
+//   try {
+//     const { id } = verifyToken(token);
+//     const getUser = await usersRepository.getUser({ _id: id });
+//     if (!getUser) return next(new Error('Unauthorized'));
+//     return next();
+//   } catch (error) {
+//     return next(new Error(error.message));
+//   }
+// });
 
-  socket.on('message', (msg, room, cb) => {
-    io.of('/chatrooms').to(room).emit('message', msg, token);
-    cb('OK');
-  });
+// chatrooms.on('connection', (socket) => {
+//   const token = socket.handshake.auth.token;
+//   const { id } = verifyToken(token);
+//   console.log(`User connected on "/chatrooms" with id "${id}"`);
 
-  socket.on('disconnect', () => {
-    console.log(`User "${id}" disconnected`);
-  });
-});
+//   socket.on('joinRoom', (room) => {
+//     socket.join(room);
+//     console.log(`User "${id}" joined room ${room}`)
+//     io.of('/chatrooms').to(room).emit('message', `You have joined room #${room}`, 'warning');
+//   });
 
-const personal = io.of('/personal');
+//   socket.on('message', (msg, room, cb) => {
+//     io.of('/chatrooms').to(room).emit('message', msg, token);
+//     cb('OK');
+//   });
 
-personal.use(async (socket, next) => {
-  console.log('Tried')
-  const token = socket.handshake.auth.token;
-  if (!token) return next(new Error('Unauthorized'));
-  try {
-    const { id } = verifyToken(token);
-    const getUser = await usersRepository.getUser({ _id: id });
-    if (!getUser) return next(new Error('Unauthorized'));
-    return next();
-  } catch (error) {
-    return next(new Error(error.message));
-  }
-});
+//   socket.on('disconnect', () => {
+//     console.log(`User "${id}" disconnected`);
+//   });
+// });
 
-personal.on('connection', (socket) => {
-  const token = socket.handshake.auth.token;
-  const { id } = verifyToken(token);
-  console.log(`User connected on "/personal" with id "${id}"`);
+// const personal = io.of('/personal');
 
-  socket.on('joinRoom', async (userId) => {
-    socket.join([id, userId]);
-    console.log(`User "${id}" joined personal chat with ${userId}`);
-  });
+// personal.use(async (socket, next) => {
+//   console.log('Tried')
+//   const token = socket.handshake.auth.token;
+//   if (!token) return next(new Error('Unauthorized'));
+//   try {
+//     const { id } = verifyToken(token);
+//     const getUser = await usersRepository.getUser({ _id: id });
+//     if (!getUser) return next(new Error('Unauthorized'));
+//     return next();
+//   } catch (error) {
+//     return next(new Error(error.message));
+//   }
+// });
 
-  socket.on('message', async (msg, userId, cb) => {
-    io.of('/personal').to(id).to(userId).emit('message', msg, token);
-    try {
-      await chatRepository.addMessageRecord(id, userId, 'message', msg);
-      await chatRepository.addMessageRecord(userId, id, 'inc_message', msg);
-    } catch (error) {
-      console.log(error.message);
-    }
-    cb('OK');
-  });
+// personal.on('connection', (socket) => {
+//   const token = socket.handshake.auth.token;
+//   const { id } = verifyToken(token);
+//   console.log(`User connected on "/personal" with id "${id}"`);
 
-  socket.on('disconnect', () => {
-    console.log(`User "${id}" disconnected`);
-  });
-});
+//   socket.on('joinRoom', async (userId) => {
+//     socket.join([id, userId]);
+//     console.log(`User "${id}" joined personal chat with ${userId}`);
+//   });
+
+//   socket.on('message', async (msg, userId, cb) => {
+//     io.of('/personal').to(id).to(userId).emit('message', msg, token);
+//     try {
+//       await chatRepository.addMessageRecord(id, userId, 'message', msg);
+//       await chatRepository.addMessageRecord(userId, id, 'inc_message', msg);
+//     } catch (error) {
+//       console.log(error.message);
+//     }
+//     cb('OK');
+//   });
+
+//   socket.on('disconnect', () => {
+//     console.log(`User "${id}" disconnected`);
+//   });
+// });
 
 server.listen(port, () => {
   const timelog = new Date();
