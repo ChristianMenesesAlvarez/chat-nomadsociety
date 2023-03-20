@@ -20,6 +20,11 @@ const io = new Server(server, {
   }
 });
 
+app.get('/rooms', (req, res) => {
+  const rooms = ['Europe', 'America', 'Asia'];
+  return res.json(rooms);
+});
+
 const chatrooms = io.of('/chatrooms');
 
 chatrooms.use(async (socket, next) => {
@@ -59,7 +64,6 @@ chatrooms.on('connection', (socket) => {
 const personal = io.of('/personal');
 
 personal.use(async (socket, next) => {
-  console.log('Tried')
   const token = socket.handshake.auth.token;
   if (!token) return next(new Error('Unauthorized'));
   try {
@@ -79,7 +83,7 @@ personal.on('connection', (socket) => {
 
   socket.on('joinRoom', async (userId) => {
     socket.join([id, userId]);
-    console.log(`User "${id}" joined personal chat with ${userId}`);
+    console.log(`User "${id}" joined personal chat with "${userId}"`);
   });
 
   socket.on('message', async (msg, userId, cb) => {
