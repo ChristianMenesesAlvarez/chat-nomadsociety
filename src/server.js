@@ -1,13 +1,13 @@
-import * as dotenv from 'dotenv';
+// import * as dotenv from 'dotenv';
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import { DBconnection } from './database.js';
-import * as usersRepository from '../src/api/usersRepository.js';
-import * as chatRepository from '../src/api/chatRepository.js';
+// import { DBconnection } from './database.js';
+// import * as usersRepository from '../src/api/usersRepository.js';
+// import * as chatRepository from '../src/api/chatRepository.js';
 
-dotenv.config();
-DBconnection();
+// dotenv.config();
+// DBconnection();
 
 const port = process.env.CHAT_PORT || 4000;
 const app = express();
@@ -28,6 +28,11 @@ const io = new Server(server);
 io.on('connection', (socket) => {
   console.log('A user connected ', socket.id)
 })
+
+server.listen(port, () => {
+  const timelog = new Date();
+  console.log(`SERVERLOG ${timelog} --> Chat listening on port ${port}`);
+});
 
 
 // const chatrooms = io.of('/chatrooms');
@@ -108,7 +113,3 @@ io.on('connection', (socket) => {
 //   });
 // });
 
-server.listen(port, () => {
-  const timelog = new Date();
-  console.log(`SERVERLOG ${timelog} --> Chat listening on port ${port}`);
-});
