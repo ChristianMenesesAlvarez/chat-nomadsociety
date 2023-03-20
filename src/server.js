@@ -2,7 +2,7 @@ import * as dotenv from 'dotenv';
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import { DBconnection } from '../database/databaseConnection.js';
+import { DBconnection } from './database.js';
 import * as usersRepository from '../src/api/usersRepository.js';
 import * as chatRepository from '../src/api/chatRepository.js';
 
