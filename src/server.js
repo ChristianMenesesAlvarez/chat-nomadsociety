@@ -8,6 +8,7 @@ import * as chatRepository from '../src/api/chatRepository.js';
 
 dotenv.config();
 DBconnection();
+
 const port = process.env.CHAT_PORT || 4000;
 const app = express();
 const server = createServer(app);
@@ -22,7 +23,7 @@ const io = new Server(server, {
   }
 });
 
-io.on('connection', (socket)=> {
+socket.on('connect', (io) => {
   io.emit('message', 'You are now connected', 'warning');
 })
 
