@@ -25,7 +25,6 @@ const io = new Server(server, {
 const chatrooms = io.of('/chatrooms');
 
 chatrooms.use(async (socket, next) => {
-  console.log('Tried')
   const token = socket.handshake.auth.token;
   if (!token) return next(new Error('Unauthorized'));
   try {
