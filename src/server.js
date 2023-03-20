@@ -12,11 +12,12 @@ DBconnection();
 const port = process.env.CHAT_PORT || 4000;
 const app = express();
 const server = createServer(app);
-const io = new Server(server);
-
-io.on('connection', (socket) => {
-  console.log('A user connected ', socket.id)
-})
+const io = new Server(server, {
+  cors: {
+    origin: 'http://127.0.0.1:5173',
+    credentials: true,
+  }
+});
 
 const chatrooms = io.of('/chatrooms');
 
