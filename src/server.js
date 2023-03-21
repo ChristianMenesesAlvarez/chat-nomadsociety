@@ -1,5 +1,6 @@
 import * as dotenv from 'dotenv';
 import express from 'express';
+import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { DBconnection } from './database.js';
@@ -20,13 +21,55 @@ const io = new Server(server, {
   }
 });
 
-app.get('/rooms', (req, res) => {
-  const rooms = ['Europe', 'America', 'Asia'];
-  return res.json(rooms);
+app.use(cors());
+// SERVER ROUTERS
+app.get('/chatrooms', (req, res) => {
+  const rooms = io.of('/chatrooms').adapter.rooms.entries();
+  let roomArray = [{
+    title: 'general',
+    state: `(0 users)`,
+    room: 'general',
+  }];
+  for (let room of rooms) {
+    roomArray.push({
+      title: room[0],
+      state: `(${room[1].size} users)`,
+      room: room[0],
+    })
+  }
+  return res.json(roomArray);
 });
 
+app.get('/contacts', async (req, res) => {
+  const contacts = [
+    {
+      title: 'Paco',
+      state: '✅',
+      userId: '640b11adf8b45a6aa48a5e40',
+    },
+    {
+      title: 'Pepe',
+      state: '✅',
+      userId: '640b4ced35fe3ca735760e17',
+    },
+    {
+      title: 'Manolo',
+      state: '✅',
+      userId: '640e2e68212917eeb459f1dc',
+    },
+    {
+      title: 'Ramon',
+      state: '✅',
+      userId: '640ee71da8d9b0bb12b6d9af',
+    },
+  ];
+  return res.json(contacts);
+})
+
+// CHAT ROOMS NAMESPACE
 const chatrooms = io.of('/chatrooms');
 
+// CHAT ROOMS MIDDLEWARE
 chatrooms.use(async (socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) return next(new Error('Unauthorized'));
@@ -40,29 +83,51 @@ chatrooms.use(async (socket, next) => {
   }
 });
 
+// CHAT ROOMS SERVER
 chatrooms.on('connection', (socket) => {
   const token = socket.handshake.auth.token;
   const { id } = verifyToken(token);
-  console.log(`User connected on "/chatrooms" with id "${id}"`);
+  socket.leave(socket.id);
+  console.log(`User "${id}" connected on "/chatrooms"`);
 
-  socket.on('joinRoom', (room) => {
+  socket.on('joinRoom', (room, cb) => {
+    socket.rooms.forEach(rm => { if (rm != room) socket.leave(rm) })
     socket.join(room);
-    console.log(`User "${id}" joined room ${room}`)
-    io.of('/chatrooms').to(room).emit('message', `You have joined room #${room}`, 'warning');
+    chatrooms.to(id).emit('chat-history', []);
+    chatrooms.to(room).emit('message', `You have joined room #${room}`, 'warning');
+    cb('OK');
   });
 
   socket.on('message', (msg, room, cb) => {
-    io.of('/chatrooms').to(room).emit('message', msg, token);
+    chatrooms.to(room).emit('message', msg, id);
     cb('OK');
   });
 
   socket.on('disconnect', () => {
-    console.log(`User "${id}" disconnected`);
+    console.log(`Socket "${socket.id}" disconnected`);
   });
 });
 
+chatrooms.adapter.on("create-room", (room) => {
+  console.log(`Room ${room} was created`);
+});
+
+chatrooms.adapter.on("delete-room", (room) => {
+  console.log(`Room ${room} was deleted`);
+});
+
+chatrooms.adapter.on("join-room", (room, id) => {
+  console.log(`Socket ${id} has joined room ${room}`);
+});
+
+chatrooms.adapter.on("leave-room", (room, id) => {
+  console.log(`Socket ${id} has left room ${room}`);
+});
+
+// PERSONAL NAMESPACE
 const personal = io.of('/personal');
 
+// PERSONAL MIDDLEWARE
 personal.use(async (socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) return next(new Error('Unauthorized'));
@@ -76,18 +141,26 @@ personal.use(async (socket, next) => {
   }
 });
 
+// PERSONAL SERVER
 personal.on('connection', (socket) => {
   const token = socket.handshake.auth.token;
   const { id } = verifyToken(token);
-  console.log(`User connected on "/personal" with id "${id}"`);
+  console.log(`User "${id}" connected on "/personal"`);
 
-  socket.on('joinRoom', async (userId) => {
+  socket.on('joinRoom', async (userId, cb) => {
+    socket.rooms.forEach(rm => socket.leave(rm))
     socket.join([id, userId]);
+    const getChatHistory = await chatRepository.retrieveChatHistory(id, userId);
+    const setEvents = getChatHistory.map(item => {
+      return { type: item.type, value: item.value }
+    });
+    personal.to(id).emit('chat-history', setEvents);
     console.log(`User "${id}" joined personal chat with "${userId}"`);
+    cb('OK')
   });
 
   socket.on('message', async (msg, userId, cb) => {
-    io.of('/personal').to(id).to(userId).emit('message', msg, token);
+    personal.to(id).to(userId).emit('message', msg, id);
     try {
       await chatRepository.addMessageRecord(id, userId, 'message', msg);
       await chatRepository.addMessageRecord(userId, id, 'inc_message', msg);
@@ -102,6 +175,7 @@ personal.on('connection', (socket) => {
   });
 });
 
+// SERVER INITIALIZING
 server.listen(port, () => {
   const timelog = new Date();
   console.log(`SERVERLOG ${timelog} --> Chat listening on port ${port}`);
