@@ -57,6 +57,7 @@ app.get('/contacts', async (req, res) => {
     const getContacts = await usersRepository.getContacts(id);
     const contacts = getContacts.contacts?.map(con => {
       return {
+        avatar: con.avatar,
         title: con.displayName,
         state: connectedUsers.has(con._id),
         userId: con._id,
@@ -98,6 +99,7 @@ app.post('/addContact', async (req, res) => {
     const addContact = await usersRepository.addContact(id, contactId);
     const contacts = addContact.contacts?.map(con => {
       return {
+        avatar: con.avatar,
         title: con.displayName,
         state: connectedUsers.has(con._id),
         userId: con._id,
@@ -121,6 +123,7 @@ app.post('/removeContact', async (req, res) => {
     const removeContact = await usersRepository.removeContact(id, contactId);
     const contacts = removeContact.contacts?.map(con => {
       return {
+        avatar: con.avatar,
         title: con.displayName,
         state: connectedUsers.has(con._id),
         userId: con._id,
