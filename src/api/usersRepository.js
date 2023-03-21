@@ -43,11 +43,11 @@ export async function search(search) {
     const user = doc.toObject();
     const template = {
       displayName: user.displayName,
-      username: user.username ? user.username : null,
+      username: user.username,
       firstName: user.firstName,
       lastName: user.lastName,
       _id: user._id,
-      avatar: user.avatar ? user.avatar : null,
+      avatar: user.avatar,
     };
     return template;
   });
