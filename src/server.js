@@ -7,6 +7,7 @@ import { DBconnection } from './database.js';
 import * as usersRepository from '../src/api/usersRepository.js';
 import * as chatRepository from '../src/api/chatRepository.js';
 import { verifyToken } from './api/verifyToken.js';
+import contactListModel from './api/contactListModel.js';
 
 dotenv.config();
 DBconnection();
@@ -21,15 +22,17 @@ const io = new Server(server, {
   }
 });
 
-app.use(cors());
 // SERVER ROUTERS
+let connectedUsers = new Set();
+
+app.use(cors());
+app.use(express.json());
+
+app.get('/health', (req, res) => { return res.status(200).json('OK') });
+
 app.get('/chatrooms', (req, res) => {
   const rooms = io.of('/chatrooms').adapter.rooms.entries();
-  let roomArray = [{
-    title: 'general',
-    state: `(0 users)`,
-    room: 'general',
-  }];
+  let roomArray = [];
   for (let room of rooms) {
     roomArray.push({
       title: room[0],
@@ -41,30 +44,89 @@ app.get('/chatrooms', (req, res) => {
 });
 
 app.get('/contacts', async (req, res) => {
-  const contacts = [
-    {
-      title: 'Paco',
-      state: '✅',
-      userId: '640b11adf8b45a6aa48a5e40',
-    },
-    {
-      title: 'Pepe',
-      state: '✅',
-      userId: '640b4ced35fe3ca735760e17',
-    },
-    {
-      title: 'Manolo',
-      state: '✅',
-      userId: '640e2e68212917eeb459f1dc',
-    },
-    {
-      title: 'Ramon',
-      state: '✅',
-      userId: '640ee71da8d9b0bb12b6d9af',
-    },
-  ];
-  return res.json(contacts);
-})
+  try {
+    const { token } = req.query;
+    if (!token) return res.status(400).json('Missing token');
+    const { id } = verifyToken(token);
+    const getUser = await usersRepository.getUser({ _id: id });
+    if (!getUser) return res.status(401).json('Unauthorized');
+    const getContacts = await usersRepository.getContacts(id);
+    const contacts = getContacts.contacts?.map(con => {
+      return {
+        title: con.displayName,
+        state: connectedUsers.has(con._id),
+        userId: con._id,
+      }
+    });
+    return res.json(contacts);
+  } catch (error) {
+    return res.status(500).json(error.message);
+  }
+});
+
+app.get('/find/', async (req, res) => {
+  try {
+    return res.json([]);
+  } catch (error) {
+    return res.status(500).json(error.message);
+  }
+});
+
+app.get('/find/:search', async (req, res) => {
+  try {
+    const { search } = req.params;
+    const findUsers = await usersRepository.search(search);
+    return res.json(findUsers);
+  } catch (error) {
+    return res.status(500).json(error.message);
+  }
+});
+
+app.post('/addContact', async (req, res) => {
+  try {
+    const { token } = req.query;
+    if (!token) return res.status(400).json('Missing token');
+    const { id } = verifyToken(token);
+    const getUser = await usersRepository.getUser({ _id: id });
+    if (!getUser) return res.status(401).json('Unauthorized');
+    const { contactId } = req.body;
+    if (!getUser) return res.status(400).json('Missing contactId parameter');
+    const addContact = await usersRepository.addContact(id, contactId);
+    const contacts = addContact.contacts?.map(con => {
+      return {
+        title: con.displayName,
+        state: connectedUsers.has(con._id),
+        userId: con._id,
+      }
+    });
+    return res.json(contacts);
+  } catch (error) {
+    return res.status(500).json(error.message);
+  }
+});
+
+app.post('/removeContact', async (req, res) => {
+  try {
+    const { token } = req.query;
+    if (!token) return res.status(400).json('Missing token');
+    const { id } = verifyToken(token);
+    const getUser = await usersRepository.getUser({ _id: id });
+    if (!getUser) return res.status(401).json('Unauthorized');
+    const { contactId } = req.body;
+    if (!getUser) return res.status(400).json('Missing contactId parameter');
+    const removeContact = await usersRepository.removeContact(id, contactId);
+    const contacts = removeContact.contacts?.map(con => {
+      return {
+        title: con.displayName,
+        state: connectedUsers.has(con._id),
+        userId: con._id,
+      }
+    });
+    return res.json(contacts);
+  } catch (error) {
+    return res.status(500).json(error.message);
+  }
+});
 
 // CHAT ROOMS NAMESPACE
 const chatrooms = io.of('/chatrooms');
@@ -145,6 +207,7 @@ personal.use(async (socket, next) => {
 personal.on('connection', (socket) => {
   const token = socket.handshake.auth.token;
   const { id } = verifyToken(token);
+  connectedUsers.add(id);
   console.log(`User "${id}" connected on "/personal"`);
 
   socket.on('joinRoom', async (userId, cb) => {
@@ -172,6 +235,7 @@ personal.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log(`User "${id}" disconnected`);
+    connectedUsers.delete(id);
   });
 });
 
