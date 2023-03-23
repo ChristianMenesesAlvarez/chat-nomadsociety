@@ -14,18 +14,7 @@ DBconnection();
 const port = process.env.CHAT_PORT || 4000;
 const app = express();
 const server = createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: [
-      'http://127.0.0.1:5173',
-      'http://127.0.0.1:5173/',
-      'http://localhost:5173',
-      'http://localhost:5173/',
-      'https://frontend-nomad-list.vercel.app',
-    ],
-    credentials: true,
-  }
-});
+const io = new Server(server);
 
 // SERVER ROUTERS
 let connectedUsers = new Set();
