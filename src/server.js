@@ -57,7 +57,7 @@ app.get('/contacts', async (req, res) => {
     const getUser = await usersRepository.getUser({ _id: id });
     if (!getUser) return res.status(401).json('Unauthorized');
     const getContacts = await usersRepository.getContacts(id);
-    const contacts = getContacts.contacts?.map(con => {
+    const contacts = getContacts?.contacts?.map(con => {
       return {
         avatar: con.avatar,
         title: con.displayName,
@@ -65,7 +65,7 @@ app.get('/contacts', async (req, res) => {
         userId: con._id,
       }
     });
-    return res.json(contacts);
+    return res.json(contacts || []);
   } catch (error) {
     return res.status(500).json(error.message);
   }
@@ -155,9 +155,10 @@ chatrooms.use(async (socket, next) => {
 });
 
 // CHAT ROOMS SERVER
-chatrooms.on('connection', (socket) => {
+chatrooms.on('connection', async (socket) => {
   const token = socket.handshake.auth.token;
   const { id } = verifyToken(token);
+  const getUser = await usersRepository.getUser({ _id: id });
   socket.leave(socket.id);
   console.log(`User "${id}" connected on "/chatrooms"`);
 
@@ -170,7 +171,7 @@ chatrooms.on('connection', (socket) => {
   });
 
   socket.on('message', (msg, room, cb) => {
-    chatrooms.to(room).emit('message', msg, id);
+    chatrooms.to(room).emit('message', msg, id, getUser.displayName);
     cb('OK');
   });
 
@@ -213,18 +214,19 @@ personal.use(async (socket, next) => {
 });
 
 // PERSONAL SERVER
-personal.on('connection', (socket) => {
+personal.on('connection', async (socket) => {
   const token = socket.handshake.auth.token;
   const { id } = verifyToken(token);
+  const getUser = await usersRepository.getUser({ _id: id });
   connectedUsers.add(id);
   console.log(`User "${id}" connected on "/personal"`);
 
   socket.on('joinRoom', async (userId, cb) => {
     socket.rooms.forEach(rm => socket.leave(rm))
     socket.join([id, userId]);
-    const getChatHistory = await chatRepository.retrieveChatHistory(id, userId);
-    const setEvents = getChatHistory.map(item => {
-      return { type: item.type, value: item.value }
+    const chat = await chatRepository.retrieveChatHistory(id, userId);
+    const setEvents = chat?.messages?.map(item => {
+      return { type: item.type, value: item.value, username: chat.user.displayName }
     });
     personal.to(id).emit('chat-history', setEvents);
     console.log(`User "${id}" joined personal chat with "${userId}"`);
@@ -232,7 +234,7 @@ personal.on('connection', (socket) => {
   });
 
   socket.on('message', async (msg, userId, cb) => {
-    personal.to(id).to(userId).emit('message', msg, id);
+    personal.to(id).to(userId).emit('message', msg, id, getUser.displayName);
     try {
       await chatRepository.addMessageRecord(id, userId, 'message', msg);
       await chatRepository.addMessageRecord(userId, id, 'inc_message', msg);

@@ -13,20 +13,20 @@ export async function createUser(body) {
 
 export async function getContacts(userId) {
   return await contactListModel.findOne({ user: userId }).
-  populate('contacts').
-  exec();
+    populate('contacts').
+    exec();
 }
 
 export async function addContact(userId, contactId) {
   return await contactListModel.findOneAndUpdate({ user: userId }, { $addToSet: { 'contacts': contactId } }, { new: true, upsert: true }).
-  populate('contacts').
-  exec();
+    populate('contacts').
+    exec();
 }
 
 export async function removeContact(userId, contactId) {
   return await contactListModel.findOneAndUpdate({ user: userId }, { $pull: { 'contacts': contactId } }, { new: true }).
-  populate('contacts').
-  exec();
+    populate('contacts').
+    exec();
 }
 
 export async function search(search) {
