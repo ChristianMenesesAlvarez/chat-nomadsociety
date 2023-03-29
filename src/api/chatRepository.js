@@ -11,6 +11,7 @@ export async function addMessageRecord(user, recipient, type, value) {
 export async function retrieveChatHistory(user, recipient) {
   const getRecord = await chatModel.findOne({ user, recipient }).
   populate('user').
+  populate('recipient').
   exec();
   return getRecord;
 }
