@@ -226,7 +226,11 @@ personal.on('connection', async (socket) => {
     socket.join([id, userId]);
     const chat = await chatRepository.retrieveChatHistory(id, userId);
     const setEvents = chat?.messages?.map(item => {
-      return { type: item.type, value: item.value, username: chat.user.displayName }
+      return {
+        type: item.type,
+        value: item.value,
+        username: item.type === 'message' ? chat.recipient.displayName : chat.user.displayName,
+      }
     });
     personal.to(id).emit('chat-history', setEvents);
     console.log(`User "${id}" joined personal chat with "${userId}"`);
