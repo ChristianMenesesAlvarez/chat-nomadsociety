@@ -27,6 +27,8 @@ const io = new Server(server, {
       'https://frontend-nomadlist-production.up.railway.app/',
       'https://master.d2emfrquuo2ol2.amplifyapp.com',
       'https://master.d2emfrquuo2ol2.amplifyapp.com/',
+      'https://fronteend-nomad-development.up.railway.app',
+      'https://fronteend-nomad-development.up.railway.app/,
     ],
     credentials: true,
   }
