@@ -23,6 +23,8 @@ const io = new Server(server, {
       'http://localhost:5173/',
       'https://frontend-nomad-list.vercel.app',
       'https://frontend-nomad-list.vercel.app/',
+      'https://frontend-nomadlist-production.up.railway.app',
+      'https://frontend-nomadlist-production.up.railway.app/',
     ],
     credentials: true,
   }
