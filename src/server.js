@@ -25,6 +25,8 @@ const io = new Server(server, {
       'https://frontend-nomad-list.vercel.app/',
       'https://frontend-nomadlist-production.up.railway.app',
       'https://frontend-nomadlist-production.up.railway.app/',
+      'https://master.d2emfrquuo2ol2.amplifyapp.com',
+      'https://master.d2emfrquuo2ol2.amplifyapp.com/',
     ],
     credentials: true,
   }
